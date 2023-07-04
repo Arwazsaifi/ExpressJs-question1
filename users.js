@@ -3,10 +3,6 @@ const mongoose=require('mongoose');
 const app=express();
 const bcrypt =require('bcryptjs')
 const {body,validationResult}=require('express-validator');
-
-
-//connection with database
-
 mongoose.connect('mongodb://127.0.0.1:27017/mydb2',{
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -23,16 +19,13 @@ const userSchema=new mongoose.Schema({
     lastname: String,
 });
 
-
-//user model
-
+//model
 const User=mongoose.model('User',userSchema);
 
 
 app.use(express.json());
 
-//for express validator for validation.
-
+//for validation
  var ValidationOfSchema=[
   body('username').notEmpty().withMessage('Username is required'),
 
@@ -88,17 +81,13 @@ app.post('/user/register',ValidationOfSchema, async(req,res)=>{
    {
     res.status(409).json({error:"email already exist."});
    }
-
-   //check password is matched with confirm password
-  
+   //check password
    if(password!==confirmPassword)
    {
     res.status(400).json({error: 'Password not matched'});
     }
 
-    
-    // generating hashed password using bcrypt.
-
+  
     const hashPass=await bcrypt.hash(password,10);
 
      const newUser= new User({
@@ -116,9 +105,6 @@ app.post('/user/register',ValidationOfSchema, async(req,res)=>{
     res.status(500).json({error: 'user not resgistered'});
   }
 });
-
-
-//Created login route Method get
 
 app.post('/user/login', async(req,res)=>{
  try{
@@ -144,53 +130,6 @@ app.post('/user/login', async(req,res)=>{
   }
 });
 
-
-
- //middleware to validte access token
-  const validationToken=async(req,res,next)=>{
-    const access_token=req.headers.authorization;
-   try{
-    const user=await User.findById(access_token);
-    if(!user)
-    {
-      return res.status(400).json({message:"invalid access token"})
-    }
-    req.user=user;
-    next();
-  }
-  catch(error)
-  {
-    console.error("error:", error);
-    return res.status(500).json({message:"error occured"});
-  }
-  };
-
-  //created route for getting user with access token
-app.get('/user/get', validationToken,async (req, res) => {
- 
-  const user=req.user;
-  return res.status(200).json({ user });
-
-});
-
-//Created route for deleting user from database Method put
-app.put('/user/delete',validationToken,async(req,res)=>{
-  
-  const user = req.user;
-
-  try
-   {
-    await User.findByIdAndDelete(user._id);
-    return res.status(200).json({ message: 'User deleted' });
-   } 
-  catch (error) 
-  {
-    console.error(error);
-    return res.status(500).json({ message: 'An error occurred during user deletion.' });
-  }
-})
-
-//Created route for get all the user from database 
 
 app.get('/user/get', async (req, res) => {
   try {

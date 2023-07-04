@@ -4,7 +4,9 @@ const app=express();
 const bcrypt =require('bcryptjs')
 const {body,validationResult}=require('express-validator');
 
+
 //connection with database
+
 mongoose.connect('mongodb://127.0.0.1:27017/mydb2',{
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -21,13 +23,16 @@ const userSchema=new mongoose.Schema({
     lastname: String,
 });
 
+
 //user model
+
 const User=mongoose.model('User',userSchema);
 
 
 app.use(express.json());
 
 //for express validator for validation.
+
  var ValidationOfSchema=[
   body('username').notEmpty().withMessage('Username is required'),
 
@@ -83,13 +88,17 @@ app.post('/user/register',ValidationOfSchema, async(req,res)=>{
    {
     res.status(409).json({error:"email already exist."});
    }
+
    //check password is matched with confirm password
+  
    if(password!==confirmPassword)
    {
     res.status(400).json({error: 'Password not matched'});
     }
+
     
     // generating hashed password using bcrypt.
+
     const hashPass=await bcrypt.hash(password,10);
 
      const newUser= new User({
@@ -108,7 +117,9 @@ app.post('/user/register',ValidationOfSchema, async(req,res)=>{
   }
 });
 
+
 //Created login route Method get
+
 app.post('/user/login', async(req,res)=>{
  try{
     const {username,password}=req.body;
@@ -132,6 +143,7 @@ app.post('/user/login', async(req,res)=>{
     res.status(500).json({message:'Please fix error'})
   }
 });
+
 
 
  //middleware to validte access token
@@ -179,6 +191,51 @@ app.put('/user/delete',validationToken,async(req,res)=>{
 })
 
 //Created route for get all the user from database 
+
+app.get('/user/get', async (req, res) => {
+  try {
+  
+    const access_token = req.headers.authorization; 
+    // console.log(access_token)
+    if (!access_token) {
+      return res.status(400).json({ message: 'Access token is missing' });
+    }
+
+    const user = await User.findById(access_token);
+
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' });
+    }
+    
+    res.status(200).json(user);
+
+  } catch (error) {
+    console.error('Error: ', error);
+    res.status(500).json({ message: 'An error occurred' });
+  }
+});
+
+app.put('/user/delete',async(req,res)=>{
+  try{
+    const access_token=req.headers.authorization;
+    if(!access_token)
+    {
+      return res.status(400).json({message:"access token is missing"});
+    }
+    const user=await User.findByIdAndDelete(access_token);
+    if(!user)
+    {
+      return res.status(400).json({message:"user not found.."});
+    }
+    res.status(200).json({ message: 'user successfully deleted' });
+  }
+  catch(error)
+  {
+    console.error("error:",error);
+    return res.status(500).json({message:"error occured"});
+  }
+})
+
 app.get('/user/list/:page',async(req,res)=>{
   try{
     //get page no.
